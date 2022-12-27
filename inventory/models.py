@@ -24,6 +24,9 @@ class BaseComponent(models.Model):
     """Component description displayed to user"""
     metadata = models.JSONField(default=dict, blank=True)
     """Extra metadata in JSON"""
+    album = models.ForeignKey(
+        "inventory.ImageAlbum", related_name="+",
+        on_delete=models.CASCADE, null=True, blank=True)
 
 
 class Component(BaseComponent):
@@ -96,6 +99,8 @@ class SwitchSet(BaseComponent):
 
 
 class KeycapSet(BaseComponent):
+    material = models.CharField(
+        max_length=128, choices=KEYCAP_MATERIALS, blank=True, default="other")
     count = models.PositiveIntegerField(default=0)
 
 
@@ -105,3 +110,22 @@ class Cable(BaseComponent):
     length_cm = models.DecimalField(
         max_digits=4, decimal_places=2,
         validators=[MinValueValidator(Decimal(0.0))], default=Decimal(0.0))
+
+
+# IMAGES
+def get_upload_path(instance, filename):
+    model = instance.album.__class__._meta
+    name = model.verbose_name_plural.replace(" ", "_")
+    return f"{name}/images/{filename}"
+
+
+class ImageAlbum(models.Model):
+    def default(self):
+        return self.images.filter(default=True).first()
+
+
+class Image(models.Model):
+    image = models.ImageField(upload_to=get_upload_path)
+    default = models.BooleanField(default=False)
+    album = models.ForeignKey(
+        "inventory.ImageAlbum", related_name="images", on_delete=models.CASCADE)
