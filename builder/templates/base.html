@@ -1,0 +1,28 @@
+{% load static %}
+<html>
+<head>
+    <link rel="shortcut icon" type="image/png" href="{% static 'images/favicon.ico' %}"/>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}"/>
+    <script src="{% static 'js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'js/jquery-3.6.3.min.js' %}"></script>
+
+    <style>
+@font-face {
+  font-family: Lobster;
+  src: url({% static 'fonts/Lobster-Regular.ttf' %});
+}
+
+#title {
+    font-family: "Lobster";
+}
+    </style>
+{% block head_extra %}{% endblock %}
+</head>
+</body>
+<div class="col-lg-8 mx-auto p-3">
+  <h1 id="title">bacon &amp; keys</h1>
+{% block content %}
+{% endblock %}
+</div>
+</body>
+</html
