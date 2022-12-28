@@ -48,7 +48,7 @@ class Component(models.Model):
     tags = models.ManyToManyField("inventory.Tag", related_name="+", blank=True)
     category = models.CharField(
         max_length=128, choices=Category.choices, null=True, blank=True)
-    hidden = models.BooleanField(default=False)
+    live = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.name}"

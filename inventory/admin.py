@@ -13,7 +13,7 @@ class ImageInline(admin.StackedInline):
 @admin.register(Component)
 class ComponentAdmin(admin.ModelAdmin):
     list_display = (
-        "name", "preview",
+        "name", "live", "preview",
         "cost", "price",
         "drop_shipped", "stock",
         "description", "_tags",)
