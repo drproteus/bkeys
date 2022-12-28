@@ -1,0 +1,44 @@
+[
+  {
+    "model": "inventory.tag",
+    "fields": {
+      "name": "includes_keycaps",
+      "hidden": true
+    }
+  },
+  {
+    "model": "inventory.tag",
+    "fields": {
+      "name": "includes_switches",
+      "hidden": true
+    }
+  },
+  {
+    "model": "inventory.tag",
+    "fields": {
+      "name": "includes_cable",
+      "hidden": true
+    }
+  },
+  {
+    "model": "inventory.tag",
+    "fields": {
+      "name": "hotswappable",
+      "hidden": true
+    }
+  },
+  {
+    "model": "inventory.tag",
+    "fields": {
+      "name": "wireless",
+      "hidden": false
+    }
+  },
+  {
+    "model": "inventory.tag",
+    "fields": {
+      "name": "bluetooth",
+      "hidden": false
+    }
+  }
+]

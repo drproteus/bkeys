@@ -44,4 +44,4 @@ class ComponentAdmin(admin.ModelAdmin):
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
-    pass
+    list_display = ("name", "hidden",)

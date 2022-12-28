@@ -10,6 +10,7 @@ from inventory.constants import Category
 class Tag(models.Model):
     id = models.UUIDField(primary_key=True, editable=False, default=uuid.uuid4)
     name = models.CharField(max_length=128, unique=True)
+    hidden = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.name}"
@@ -47,12 +48,14 @@ class Component(models.Model):
     tags = models.ManyToManyField("inventory.Tag", related_name="+", blank=True)
     category = models.CharField(
         max_length=128, choices=Category.choices, null=True, blank=True)
+    hidden = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.name}"
 
     def __repr__(self):
-        return f"<{self.__class__.__name__}: {self.name}>"
+        cat = f" ({self.category})" if self.category else ""
+        return f"<{self.__class__.__name__}: {self.name}{cat}>"
 
     @property
     def default_image(self):
