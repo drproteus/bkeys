@@ -4,11 +4,21 @@ from decimal import Decimal
 from django.db import models
 from django.core.validators import MinValueValidator
 
+from inventory.constants import Category
 
-class BaseComponent(models.Model):
-    class Meta:
-        abstract = True
 
+class Tag(models.Model):
+    id = models.UUIDField(primary_key=True, editable=False, default=uuid.uuid4)
+    name = models.CharField(max_length=128, unique=True)
+
+    def __str__(self):
+        return f"{self.name}"
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__}: {self.name}>"
+
+
+class Component(models.Model):
     id = models.UUIDField(primary_key=True, editable=False, default=uuid.uuid4)
     name = models.CharField(max_length=256, blank=False, unique=True)
     price = models.DecimalField(
@@ -17,16 +27,26 @@ class BaseComponent(models.Model):
         validators=[MinValueValidator(Decimal(0.0))],
         default=Decimal(0.0),
     )
-    """Component price in USD cents"""
+    cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal(0.0))],
+        default=Decimal(0.0),
+    )
     drop_shipped = models.BooleanField(default=False)
     stock = models.IntegerField(default=0)
+    """If not drop-shipped, how many of this component are available"""
     url = models.CharField(max_length=1024, blank=True)
+    """Link to related Amazon or other vendor URL"""
     notes = models.TextField(blank=True)
     """Internal notes about the item"""
     about = models.TextField(blank=True)
     """Component description displayed to user"""
     metadata = models.JSONField(default=dict, blank=True)
     """Extra metadata in JSON"""
+    tags = models.ManyToManyField("inventory.Tag", related_name="+", blank=True)
+    category = models.CharField(
+        max_length=128, choices=Category.choices, null=True, blank=True)
 
     def __str__(self):
         return f"{self.name}"
@@ -41,147 +61,25 @@ class BaseComponent(models.Model):
             return images.first()
         return self.images.filter(default=True).first()
 
-
-class Component(BaseComponent):
-    pass
-
-
-FORM_FACTORS = [
-    ("60", "60%"),
-    ("65", "65%"),
-    ("75", "75%"),
-    ("80", "80%"),
-    ("95", "95%"),
-    ("100", "100%"),
-    ("numpad", "numpad"),
-    ("macro", "macro"),
-    ("custom", "custom"),
-]
-INPUT_OPTIONS = [
-    ("micro", "Micro USB"),
-    ("mini", "Mini USB"),
-    ("type-c", "USB-C"),
-]
-OUTPUT_OPTIONS = [
-    ("type-a", "USB-A"),
-    ("type-c", "USB-C"),
-]
-SWITCH_TYPES = [
-    ("mechanical_linear", "Linear"),
-    ("mechanical_tactile", "Tactile"),
-    ("mechanical_clicky", "Clicky"),
-    ("optical", "Optical"),
-    ("hybrid", "Hybrid"),
-    ("topre", "Topre"),
-    ("other", "Other"),
-]
-WIRELESS_MODES = [
-    ("bluetooth", "Bluetooth"),
-    ("2.4ghz", "2.4GHz"),
-    ("combo", "Bluetooth and 2.4GHz"),
-]
-KEYCAP_MATERIALS = [
-    ("abs", "ABS"),
-    ("pbt", "PBT"),
-    ("wood", "Wood"),
-    ("other", "Other"),
-]
-
-
-class Keyboard(BaseComponent):
-    form_factor = models.CharField(
-        max_length=128, choices=FORM_FACTORS, default="custom"
-    )
-    key_count = models.PositiveIntegerField(default=0)
-
-    hot_swappable = models.BooleanField(default=False)
-
-    switches = models.CharField(
-        max_length=128, choices=SWITCH_TYPES, null=True, blank=True
-    )
-    keycaps = models.CharField(
-        max_length=128, choices=KEYCAP_MATERIALS, null=True, blank=True
-    )
-    wireless_mode = models.CharField(
-        max_length=128, choices=WIRELESS_MODES, null=True, blank=True
-    )
-    input = models.CharField(
-        max_length=128, choices=INPUT_OPTIONS, default="type-c", null=True, blank=True
-    )
-    output = models.CharField(
-        max_length=128, choices=OUTPUT_OPTIONS, null=True, blank=True
-    )
-
-
-class SwitchSet(BaseComponent):
-    switch_type = models.CharField(
-        max_length=128, choices=SWITCH_TYPES, blank=True, default="other"
-    )
-    count = models.PositiveIntegerField(default=0)
-
-
-class KeycapSet(BaseComponent):
-    material = models.CharField(
-        max_length=128, choices=KEYCAP_MATERIALS, blank=True, default="other"
-    )
-    count = models.PositiveIntegerField(default=0)
-
-
-class Cable(BaseComponent):
-    input = models.CharField(max_length=128, choices=INPUT_OPTIONS, default="micro")
-    output = models.CharField(max_length=128, choices=OUTPUT_OPTIONS, default="type-a")
-    length_cm = models.DecimalField(
-        max_digits=4,
-        decimal_places=2,
-        validators=[MinValueValidator(Decimal(0.0))],
-        default=Decimal(0.0),
-    )
-
-
-# IMAGES
-class BaseImage(models.Model):
-    class Meta:
-        abstract = True
-
-    name = models.CharField(max_length=128, blank=True, null=True)
-    default = models.BooleanField(default=False)
-
     def save(self, *args, **kwargs):
-        if not self.name and self.image:
-            self.name = self.image.name
+        self.metadata = self.metadata or {}
         super().save(*args, **kwargs)
 
 
-class ComponentImage(BaseImage):
-    image = models.ImageField(upload_to="images/components/")
+class Image(models.Model):
+    name = models.CharField(max_length=128, blank=True, null=True)
+    default = models.BooleanField(default=False)
+    file = models.ImageField(upload_to="images/components/")
     component = models.ForeignKey(
-        "inventory.Component", related_name="images", on_delete=models.CASCADE
-    )
+        "inventory.Component", related_name="images", on_delete=models.CASCADE)
 
+    def save(self, *args, **kwargs):
+        if not self.name and self.file:
+            self.name = self.file.name
+        super().save(*args, **kwargs)
 
-class KeyboardImage(BaseImage):
-    image = models.ImageField(upload_to="images/keyboards/")
-    component = models.ForeignKey(
-        "inventory.Keyboard", related_name="images", on_delete=models.CASCADE
-    )
+    def __str__(self):
+        return f"{self.name}"
 
-
-class SwitchSetImage(BaseImage):
-    image = models.ImageField(upload_to="images/switches/")
-    component = models.ForeignKey(
-        "inventory.SwitchSet", related_name="images", on_delete=models.CASCADE
-    )
-
-
-class KeycapSetImage(BaseImage):
-    image = models.ImageField(upload_to="images/keycaps/")
-    component = models.ForeignKey(
-        "inventory.KeycapSet", related_name="images", on_delete=models.CASCADE
-    )
-
-
-class CableImage(BaseImage):
-    image = models.ImageField(upload_to="images/keycaps/")
-    component = models.ForeignKey(
-        "inventory.Cable", related_name="images", on_delete=models.CASCADE
-    )
+    def __repr__(self):
+        return f"<{self.__class__.__name__}: {self.name} ({self.file.url})>"
